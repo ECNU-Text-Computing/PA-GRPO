@@ -1,0 +1,8 @@
+Copyright 2023-2024 Bytedance Ltd. and/or its affiliates
+
+PA-GRPO modifications:
+Copyright 2026 East China Normal University
+Authors: Jinquan Zheng, Jia Yuan, Jiacheng Yao, Chenyang Gu, Pujun Zheng, Guoxiu He
+                  (School of Economics and Management, East China Normal University)
+Corresponding author: Guoxiu He <gxhe@fem.ecnu.edu.cn>
+Licensed under the Apache License, Version 2.0
