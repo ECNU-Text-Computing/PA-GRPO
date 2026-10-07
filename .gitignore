@@ -130,6 +130,9 @@ ENV/
 # Gemini AI config
 .gemini
 
+# Local Git worktrees used for isolated Codex tasks
+.worktrees/
+
 # Mac
 .DS_Store
 

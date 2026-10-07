@@ -17,6 +17,7 @@ from typing import Any
 
 import torch
 
+from permstudy.rollout_identity import EXPLICIT_IDENTITY_MODE, merge_identity_into_extra_infos
 from verl import DataProto
 from verl.workers.reward_manager import register
 from verl.workers.reward_manager.abstract import AbstractRewardManager, RawRewardFn
@@ -62,7 +63,11 @@ class BatchRewardManager(AbstractRewardManager):
         ground_truths = [item.non_tensor_batch["reward_model"].get("ground_truth", None) for item in data]
         data_sources = data.non_tensor_batch[self.reward_fn_key]
         rollout_reward_scores = data.non_tensor_batch.get("reward_scores", [{} for _ in range(len(data))])
-        extras = data.non_tensor_batch.get("extra_info", [{} for _ in range(len(data))])
+        identity_mode = self.reward_kwargs.get("identity_mode", "legacy_index")
+        if identity_mode == EXPLICIT_IDENTITY_MODE:
+            extras = merge_identity_into_extra_infos(data)
+        else:
+            extras = data.non_tensor_batch.get("extra_info", [{} for _ in range(len(data))])
 
         for i in range(len(data)):
             extras[i]["rollout_reward_scores"] = rollout_reward_scores[i]

@@ -1,0 +1,17 @@
+# Run from the repository root with the pagrpo-smoke Python 3.12 environment.
+
+python scripts_permstudy/smoke/build_task1a_fixture.py
+
+python evaluation/evaluate_models.py \
+  --model_path eval_results/smoke/models/SmolLM2-135M-Instruct \
+  --use_transformers \
+  --mode direct \
+  --dataset_files artifacts/smoke/task1a/smoke_judge_direct.parquet \
+  --max_samples 2 \
+  --max_new_tokens 4 \
+  --output_dir eval_results/task1a
+
+# Replace <generated-results.json> with the timestamped JSON emitted above.
+python evaluation/compute_metrics_judge.py \
+  <generated-results.json> \
+  --output artifacts/smoke/task1a/metrics.txt

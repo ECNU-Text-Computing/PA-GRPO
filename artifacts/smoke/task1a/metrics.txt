@@ -1,0 +1,13 @@
+================================================================================
+Evaluation metrics report (pairwise / P=2)
+================================================================================
+
+Accuracy: 0.5000 (1/2)
+Consistency (Con): 0.0000 (0/1 pair)
+Consistent Accuracy (CA): 0.0000 (0/1 pair)
+RStd: 0.5000
+CKLD: 11.166351874590134
+
+These numbers only prove that inference output can be parsed and consumed by
+the official scorer. They are not research results and must not be compared
+with PA-GRPO, EIS-GRPO, or ALC training results.

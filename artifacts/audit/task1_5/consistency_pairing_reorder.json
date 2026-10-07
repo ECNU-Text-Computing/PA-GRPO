@@ -1,0 +1,419 @@
+{
+  "fixture_note": "Synthetic semantic winners are chosen to make cross-slot mispairing observable.",
+  "official_behavior_modeled": "pair t-th observed permutation-0 item with t-th observed permutation-1 item",
+  "explicit_behavior": "pair by (pair_id, rollout_slot)",
+  "scenarios": [
+    {
+      "name": "original",
+      "ordered_rollout_ids": [
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 0,
+          "response_length": 4,
+          "surface_answer": "A",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 1,
+          "response_length": 9,
+          "surface_answer": "A",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 2,
+          "response_length": 2,
+          "surface_answer": "B",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 0,
+          "response_length": 7,
+          "surface_answer": "B",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 1,
+          "response_length": 1,
+          "surface_answer": "A",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 2,
+          "response_length": 6,
+          "surface_answer": "A",
+          "semantic_answer": "y2"
+        }
+      ],
+      "official_slot_pairs": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "explicit_slot_pairs": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "official_consistency_rewards": [
+        1.0,
+        -1.0,
+        1.0,
+        1.0,
+        -1.0,
+        1.0
+      ],
+      "explicit_consistency_rewards": [
+        1.0,
+        -1.0,
+        1.0,
+        1.0,
+        -1.0,
+        1.0
+      ],
+      "metrics": {
+        "pairing_match_rate": 1.0,
+        "consistency_reward_match_rate": 1.0,
+        "mean_reward_difference": 0.0,
+        "mean_absolute_reward_difference": 0.0
+      }
+    },
+    {
+      "name": "random_shuffle_seed_20261004",
+      "ordered_rollout_ids": [
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 1,
+          "response_length": 1,
+          "surface_answer": "A",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 0,
+          "response_length": 7,
+          "surface_answer": "B",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 2,
+          "response_length": 6,
+          "surface_answer": "A",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 2,
+          "response_length": 2,
+          "surface_answer": "B",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 0,
+          "response_length": 4,
+          "surface_answer": "A",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 1,
+          "response_length": 9,
+          "surface_answer": "A",
+          "semantic_answer": "y1"
+        }
+      ],
+      "official_slot_pairs": [
+        [
+          2,
+          1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "explicit_slot_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "official_consistency_rewards": [
+        1.0,
+        1.0,
+        -1.0,
+        1.0,
+        1.0,
+        -1.0
+      ],
+      "explicit_consistency_rewards": [
+        -1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        -1.0
+      ],
+      "metrics": {
+        "pairing_match_rate": 0.3333333333333333,
+        "consistency_reward_match_rate": 0.6666666666666666,
+        "mean_reward_difference": 0.0,
+        "mean_absolute_reward_difference": 0.6666666666666666
+      }
+    },
+    {
+      "name": "response_length_sort",
+      "ordered_rollout_ids": [
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 1,
+          "response_length": 1,
+          "surface_answer": "A",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 2,
+          "response_length": 2,
+          "surface_answer": "B",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 0,
+          "response_length": 4,
+          "surface_answer": "A",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 2,
+          "response_length": 6,
+          "surface_answer": "A",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 0,
+          "response_length": 7,
+          "surface_answer": "B",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 1,
+          "response_length": 9,
+          "surface_answer": "A",
+          "semantic_answer": "y1"
+        }
+      ],
+      "official_slot_pairs": [
+        [
+          2,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "explicit_slot_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "official_consistency_rewards": [
+        1.0,
+        1.0,
+        -1.0,
+        -1.0,
+        1.0,
+        1.0
+      ],
+      "explicit_consistency_rewards": [
+        -1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        -1.0
+      ],
+      "metrics": {
+        "pairing_match_rate": 0.0,
+        "consistency_reward_match_rate": 0.3333333333333333,
+        "mean_reward_difference": 0.0,
+        "mean_absolute_reward_difference": 1.3333333333333333
+      }
+    },
+    {
+      "name": "simulated_balance_reorder",
+      "ordered_rollout_ids": [
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 0,
+          "response_length": 7,
+          "surface_answer": "B",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 0,
+          "response_length": 4,
+          "surface_answer": "A",
+          "semantic_answer": "y1"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 1,
+          "response_length": 1,
+          "surface_answer": "A",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 2,
+          "response_length": 2,
+          "surface_answer": "B",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 1,
+          "rollout_slot": 2,
+          "response_length": 6,
+          "surface_answer": "A",
+          "semantic_answer": "y2"
+        },
+        {
+          "pair_id": "pair-1",
+          "permutation_id": 0,
+          "rollout_slot": 1,
+          "response_length": 9,
+          "surface_answer": "A",
+          "semantic_answer": "y1"
+        }
+      ],
+      "official_slot_pairs": [
+        [
+          0,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "explicit_slot_pairs": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "official_consistency_rewards": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        -1.0,
+        -1.0
+      ],
+      "explicit_consistency_rewards": [
+        1.0,
+        1.0,
+        -1.0,
+        1.0,
+        1.0,
+        -1.0
+      ],
+      "metrics": {
+        "pairing_match_rate": 0.3333333333333333,
+        "consistency_reward_match_rate": 0.6666666666666666,
+        "mean_reward_difference": 0.0,
+        "mean_absolute_reward_difference": 0.6666666666666666
+      }
+    }
+  ]
+}

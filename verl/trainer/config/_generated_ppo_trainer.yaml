@@ -468,6 +468,8 @@ reward_model:
 custom_reward_function:
   path: null
   name: compute_score
+grouping:
+  identity_mode: legacy_index
 algorithm:
   _target_: verl.trainer.config.AlgoConfig
   gamma: 1.0

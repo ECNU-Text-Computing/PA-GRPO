@@ -62,6 +62,13 @@ custom_reward_function:
   # The name of the reward function within the specified file. Default is 'compute_score'.
   name: compute_score
 
+# Controls how permutation rollouts are paired for consistency rewards.
+grouping:
+
+  # "legacy_index" preserves PA-Official behavior; "explicit" uses
+  # dataset pair IDs plus an explicit rollout slot propagated by the trainer.
+  identity_mode: legacy_index
+
 # config for the algorithm
 algorithm:
 

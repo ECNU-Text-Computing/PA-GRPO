@@ -1,0 +1,12 @@
+{
+  "accuracy": 0.5,
+  "correct_count": 1,
+  "total_count": 2,
+  "consistency": 0.0,
+  "consistent_pairs": 0,
+  "total_pairs": 1,
+  "consistent_correct": 0.0,
+  "consistent_correct_pairs": 0,
+  "rstd": 0.5,
+  "ckld": 11.16635187588189
+}

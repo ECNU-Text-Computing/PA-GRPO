@@ -47,6 +47,8 @@ import zmq.asyncio
 from filelock import FileLock
 from omegaconf import ListConfig
 from tensordict import TensorDict
+
+from permstudy.rollout_identity import IDENTITY_KEYS, validate_backend_prompt_order
 from torch.distributed.device_mesh import DeviceMesh
 from vllm import LLM, SamplingParams
 from vllm.config import CompilationConfig, LoRAConfig
@@ -386,6 +388,8 @@ class vLLMRollout(BaseRollout):
                 lora_request=lora_requests,
                 use_tqdm=False,
             )
+            if all(key in non_tensor_batch for key in IDENTITY_KEYS):
+                validate_backend_prompt_order(vllm_inputs, outputs)
 
             # TODO(sgm): disable logprob when recompute_log_prob is enable
             # if n = 1: (bs, response_length) ; if n > 1: (bs * n, response_length)

@@ -21,6 +21,7 @@ import os
 import re
 import glob
 import json
+import sys
 import argparse
 import torch
 import pandas as pd
@@ -28,6 +29,15 @@ import numpy as np
 from datetime import datetime
 from tqdm import tqdm
 from pathlib import Path
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+from permstudy.controlled_evaluator import (
+    extract_controlled_answer,
+    resolve_num_options as resolve_controlled_num_options,
+)
 
 
 # ==================== JSON序列化修复 ====================
@@ -226,6 +236,30 @@ def extract_answer_from_response(response, mode, num_options=4):
     return None
 
 
+def resolve_evaluation_num_options(
+    file_path, evaluation_contract="official", num_options_override="auto"
+):
+    """Resolve option count without changing the official auto-detection path."""
+    if num_options_override in {"2", "4", 2, 4}:
+        return int(num_options_override)
+    if num_options_override != "auto":
+        raise ValueError("num_options_override must be 'auto', '2', or '4'")
+    if evaluation_contract == "official":
+        return detect_num_options_from_file(file_path)
+    if evaluation_contract == "controlled":
+        return resolve_controlled_num_options(file_path, "auto")
+    raise ValueError("evaluation_contract must be 'official' or 'controlled'")
+
+
+def extract_answer_for_contract(response, mode, num_options, evaluation_contract="official"):
+    """Dispatch answer extraction while preserving the official default."""
+    if evaluation_contract == "official":
+        return extract_answer_from_response(response, mode, num_options)
+    if evaluation_contract == "controlled":
+        return extract_controlled_answer(response, mode, num_options)
+    raise ValueError("evaluation_contract must be 'official' or 'controlled'")
+
+
 def extract_thinking_content(response, mode):
     """提取思考内容"""
     if mode == "think":
@@ -276,8 +310,12 @@ class StreamingResultWriter:
     
     def get_summary(self):
         accuracy = self.correct / self.total if self.total > 0 else 0
-        return {"evaluated_samples": len(self.results), "correct": self.correct, 
-                "total_with_answer": self.total, "accuracy": accuracy}
+        summary = {"evaluated_samples": len(self.results), "correct": self.correct,
+                   "total_with_answer": self.total, "accuracy": accuracy}
+        for key in ("evaluation_contract", "num_options"):
+            if key in self.metadata:
+                summary[key] = self.metadata[key]
+        return summary
 
 
 # ==================== vLLM模型包装器（支持LoRA）====================
@@ -759,7 +797,8 @@ class TransformersModelWrapper:
 # ==================== 评估函数 ====================
 def evaluate_dataset_batch(model, dataset_path, mode, num_options, output_path,
                            max_samples=None, batch_size=16,
-                           temperature=0.0, top_p=1.0, max_new_tokens=2048):
+                           temperature=0.0, top_p=1.0, max_new_tokens=2048,
+                           evaluation_contract="official"):
     """使用vLLM批量评估数据集"""
     print(f"\nEvaluating dataset: {dataset_path}")
 
@@ -769,7 +808,11 @@ def evaluate_dataset_batch(model, dataset_path, mode, num_options, output_path,
 
     print(f"samples: {len(df)}, batch size: {batch_size}")
     
-    metadata = {"dataset": os.path.basename(dataset_path), "mode": mode, "num_options": num_options, "total_samples": len(df)}
+    metadata = {
+        "dataset": os.path.basename(dataset_path), "mode": mode,
+        "num_options": num_options, "evaluation_contract": evaluation_contract,
+        "total_samples": len(df),
+    }
     writer = StreamingResultWriter(output_path, metadata)
     
     # 准备所有数据
@@ -798,7 +841,9 @@ def evaluate_dataset_batch(model, dataset_path, mode, num_options, output_path,
         )
         
         for item, output in zip(batch, outputs):
-            extracted_answer = extract_answer_from_response(output['response'], mode, num_options)
+            extracted_answer = extract_answer_for_contract(
+                output['response'], mode, num_options, evaluation_contract
+            )
             is_correct = extracted_answer == item['golden_answer'] if item['golden_answer'] else None
             
             writer.add_result({
@@ -819,7 +864,8 @@ def evaluate_dataset_batch(model, dataset_path, mode, num_options, output_path,
 
 def evaluate_dataset_sequential(model, dataset_path, mode, num_options, output_path,
                                 max_samples=None,
-                                temperature=0.0, top_p=1.0, max_new_tokens=2048):
+                                temperature=0.0, top_p=1.0, max_new_tokens=2048,
+                                evaluation_contract="official"):
     """使用Transformers逐个评估数据集"""
     print(f"\nEvaluating dataset: {dataset_path}")
     
@@ -829,7 +875,11 @@ def evaluate_dataset_sequential(model, dataset_path, mode, num_options, output_p
     
     print(f"samples: {len(df)}")
     
-    metadata = {"dataset": os.path.basename(dataset_path), "mode": mode, "num_options": num_options, "total_samples": len(df)}
+    metadata = {
+        "dataset": os.path.basename(dataset_path), "mode": mode,
+        "num_options": num_options, "evaluation_contract": evaluation_contract,
+        "total_samples": len(df),
+    }
     writer = StreamingResultWriter(output_path, metadata)
     
     for idx, row in tqdm(df.iterrows(), total=len(df), desc="逐个推理"):
@@ -844,7 +894,9 @@ def evaluate_dataset_sequential(model, dataset_path, mode, num_options, output_p
                 messages, mode=mode, num_options=num_options,
                 temperature=temperature, top_p=top_p, max_new_tokens=max_new_tokens,
             )
-            extracted_answer = extract_answer_from_response(output['response'], mode, num_options)
+            extracted_answer = extract_answer_for_contract(
+                output['response'], mode, num_options, evaluation_contract
+            )
             is_correct = extracted_answer == golden_answer if golden_answer else None
             
             writer.add_result({
@@ -867,7 +919,7 @@ def evaluate_dataset_sequential(model, dataset_path, mode, num_options, output_p
 
 
 # ==================== 主函数 ====================
-def main():
+def build_argument_parser():
     parser = argparse.ArgumentParser(description="模型测评脚本 (加速版v2 - 支持vLLM+LoRA)")
     
     # 模型参数 - 修改参数名称使其更清晰
@@ -895,6 +947,14 @@ def main():
                              "$PAGRPO_DATASET_DIR/*_<mode>.parquet.")
     parser.add_argument("--max_samples", type=int, default=None)
     parser.add_argument("--output_dir", type=str, default="./eval_results")
+    parser.add_argument(
+        "--evaluation_contract", choices=["official", "controlled"], default="official",
+        help="Answer/dataset parsing contract. Defaults to official reproduction behavior.",
+    )
+    parser.add_argument(
+        "--num_options", choices=["auto", "2", "4"], default="auto",
+        help="Strict option-count override; auto uses the selected evaluation contract.",
+    )
 
     # Decoding parameters. Default is greedy (temperature=0) to match the
     # deterministic numbers in the paper; pass --temperature > 0 to sample.
@@ -903,7 +963,12 @@ def main():
     parser.add_argument("--top_p", type=float, default=1.0,
                         help="Top-p nucleus sampling threshold (ignored when temperature=0).")
     parser.add_argument("--max_new_tokens", type=int, default=2048)
-    
+
+    return parser
+
+
+def main():
+    parser = build_argument_parser()
     args = parser.parse_args()
     
     # 确定要评估的checkpoint列表
@@ -934,6 +999,8 @@ def main():
     print("Evaluation config:")
     print(f"  number of models to evaluate: {len(checkpoints_to_eval)}")
     print(f"  mode: {args.mode}")
+    print(f"  evaluation contract: {args.evaluation_contract}")
+    print(f"  num options: {args.num_options}")
     print(f"  backend: {'transformers' if args.use_transformers else 'vLLM'}")
     print("=" * 70)
     
@@ -945,7 +1012,9 @@ def main():
                 datasets_to_eval.append({
                     "name": os.path.basename(file_path).replace('.parquet', ''),
                     "path": file_path,
-                    "options": detect_num_options_from_file(file_path)
+                    "options": resolve_evaluation_num_options(
+                        file_path, args.evaluation_contract, args.num_options
+                    )
                 })
     else:
         # Auto-discover all `*_<mode>.parquet` files under DATASET_DIR
@@ -954,7 +1023,9 @@ def main():
             datasets_to_eval.append({
                 "name": os.path.basename(dataset_path).replace('.parquet', ''),
                 "path": dataset_path,
-                "options": detect_num_options_from_file(dataset_path),
+                "options": resolve_evaluation_num_options(
+                    dataset_path, args.evaluation_contract, args.num_options
+                ),
             })
     
     if not datasets_to_eval:
@@ -1052,12 +1123,14 @@ def main():
                     model, ds_info["path"], args.mode, ds_info["options"], result_file,
                     max_samples=args.max_samples, batch_size=args.batch_size,
                     temperature=args.temperature, top_p=args.top_p, max_new_tokens=args.max_new_tokens,
+                    evaluation_contract=args.evaluation_contract,
                 )
             else:
                 summary = evaluate_dataset_sequential(
                     model, ds_info["path"], args.mode, ds_info["options"], result_file,
                     max_samples=args.max_samples,
                     temperature=args.temperature, top_p=args.top_p, max_new_tokens=args.max_new_tokens,
+                    evaluation_contract=args.evaluation_contract,
                 )
             
             all_summaries[ds_info["name"]] = summary

@@ -1,0 +1,15 @@
+# Minimal Windows-only environment for evaluator/parser/scorer smoke tests.
+# This is not the Linux verl/vLLM training environment.
+# Create with Python 3.12 and run from the repository root.
+
+accelerate==1.11.0
+numpy==1.26.4
+openpyxl==3.1.5
+pandas==2.3.3
+peft==0.17.1
+pyarrow==22.0.0
+pytest==8.4.2
+tokenizers==0.22.1
+torch==2.6.0
+tqdm==4.67.1
+transformers==4.57.1

@@ -26,6 +26,14 @@ bash scripts/run_mcq_llama.sh   # or run_{mcq,judge}_{llama,qwen}.sh
 python evaluation/evaluate_models.py --model_path /path/to/ckpt \
     --base_model_path /path/to/base --mode think --batch_size 32
 
+# Controlled comparison (strict whole-dataset option detection + strict final-answer parsing)
+python evaluation/evaluate_models.py --model_path /path/to/ckpt \
+    --base_model_path /path/to/base --mode think --batch_size 32 \
+    --evaluation_contract controlled --num_options auto
+
+# Use --num_options 2 or 4 when a benchmark prompt does not declare its option contract.
+# Omitting both new flags preserves the official evaluator behavior.
+
 # Score
 python evaluation/compute_metrics_judge.py ./eval_results/<run>/   # P=2
 python evaluation/compute_metrics_mcq.py   ./eval_results/<run>/   # P=24

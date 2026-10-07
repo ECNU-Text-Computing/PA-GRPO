@@ -137,6 +137,25 @@ def load_reward_manager(
     # registered via `verl.workers.reward_manager.register`
     # By default reward_manager is set to naive (NaiveRewardManager)
     reward_manager_name = config.reward_model.get("reward_manager", "naive")
+    identity_mode = config.get("grouping", {}).get("identity_mode", "legacy_index")
+    reward_identity_mode = reward_kwargs.get("identity_mode")
+    if reward_identity_mode is not None and reward_identity_mode != identity_mode:
+        raise ValueError(
+            "reward_model.reward_kwargs.identity_mode "
+            f"({reward_identity_mode!r}) conflicts with grouping.identity_mode ({identity_mode!r})"
+        )
+    custom_reward_config = config.get("custom_reward_function") or {}
+    custom_reward_kwargs = custom_reward_config.get("reward_kwargs") or {}
+    custom_identity_mode = custom_reward_kwargs.get("identity_mode")
+    if custom_identity_mode is not None and custom_identity_mode != identity_mode:
+        raise ValueError(
+            "custom_reward_function.reward_kwargs.identity_mode "
+            f"({custom_identity_mode!r}) conflicts with grouping.identity_mode ({identity_mode!r})"
+        )
+    if identity_mode == "explicit":
+        if reward_manager_name != "batch":
+            raise ValueError("grouping.identity_mode=explicit requires reward_model.reward_manager=batch")
+        reward_kwargs["identity_mode"] = identity_mode
     reward_manager_cls = get_reward_manager_cls(reward_manager_name)
 
     if compute_score is None:

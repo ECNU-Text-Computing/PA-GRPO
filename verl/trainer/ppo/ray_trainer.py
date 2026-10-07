@@ -35,6 +35,14 @@ from torch.utils.data import Dataset, Sampler
 from torchdata.stateful_dataloader import StatefulDataLoader
 from tqdm import tqdm
 
+from permstudy.rollout_identity import (
+    IDENTITY_KEYS,
+    attach_permutation_identity,
+    ensure_supported_trainer_identity_mode,
+    repeat_for_rollout,
+    snapshot_rollout_identity,
+    validate_generation_identity,
+)
 from verl import DataProto
 from verl.experimental.dataset.sampler import AbstractCurriculumSampler
 from verl.protocol import pad_dataproto_to_divisor, unpad_dataproto
@@ -592,7 +600,7 @@ class RayPPOTrainer:
         self.validation_generations_logger.log(self.config.trainer.logger, samples, self.global_steps)
 
     def _get_gen_batch(self, batch: DataProto) -> DataProto:
-        reward_model_keys = set({"data_source", "reward_model", "extra_info", "uid"}) & batch.non_tensor_batch.keys()
+        reward_model_keys = set({"data_source", "reward_model", "extra_info", "uid", *IDENTITY_KEYS}) & batch.non_tensor_batch.keys()
 
         # pop those keys for generation
         batch_keys_to_pop = ["input_ids", "attention_mask", "position_ids"]
@@ -601,6 +609,11 @@ class RayPPOTrainer:
             batch_keys=batch_keys_to_pop,
             non_tensor_batch_keys=list(non_tensor_batch_keys_to_pop),
         )
+        # Controlled identity is needed by both the generation backend and the
+        # reward-side batch. Copy it instead of moving it out of ``batch``.
+        for key in IDENTITY_KEYS:
+            if key in batch.non_tensor_batch:
+                gen_batch.non_tensor_batch[key] = batch.non_tensor_batch[key].copy()
 
         # For agent loop, we need reward model keys to compute score.
         if self.async_rollout_mode:
@@ -609,6 +622,13 @@ class RayPPOTrainer:
         return gen_batch
 
     def _validate(self):
+        identity_mode = self.config.get("grouping", {}).get("identity_mode", "legacy_index")
+        ensure_supported_trainer_identity_mode(
+            identity_mode,
+            async_rollout_mode=self.async_rollout_mode,
+            advantage_estimator=self.config.algorithm.adv_estimator,
+            rollout_backend=self.config.actor_rollout_ref.rollout.name,
+        )
         data_source_lst = []
         reward_extra_infos_dict: dict[str, list] = defaultdict(list)
 
@@ -622,6 +642,7 @@ class RayPPOTrainer:
 
         for test_data in self.val_dataloader:
             test_batch = DataProto.from_single_dict(test_data)
+            attach_permutation_identity(test_batch, identity_mode=identity_mode)
 
             if "uid" not in test_batch.non_tensor_batch:
                 test_batch.non_tensor_batch["uid"] = np.array(
@@ -629,8 +650,10 @@ class RayPPOTrainer:
                 )
 
             # repeat test batch
-            test_batch = test_batch.repeat(
-                repeat_times=self.config.actor_rollout_ref.rollout.val_kwargs.n, interleave=True
+            test_batch = repeat_for_rollout(
+                test_batch,
+                repeat_times=self.config.actor_rollout_ref.rollout.val_kwargs.n,
+                identity_mode=identity_mode,
             )
 
             # we only do validation on rule-based rm
@@ -667,10 +690,16 @@ class RayPPOTrainer:
                 else self.config.actor_rollout_ref.rollout.agent.num_workers
             )
             test_gen_batch_padded, pad_size = pad_dataproto_to_divisor(test_gen_batch, size_divisor)
+            expected_generation_identity = snapshot_rollout_identity(test_gen_batch_padded, identity_mode)
             if not self.async_rollout_mode:
                 test_output_gen_batch_padded = self.actor_rollout_wg.generate_sequences(test_gen_batch_padded)
             else:
                 test_output_gen_batch_padded = self.async_rollout_manager.generate_sequences(test_gen_batch_padded)
+            validate_generation_identity(
+                expected_generation_identity,
+                test_output_gen_batch_padded,
+                identity_mode=identity_mode,
+            )
 
             # unpad
             test_output_gen_batch = unpad_dataproto(test_output_gen_batch_padded, pad_size=pad_size)
@@ -1100,6 +1129,13 @@ class RayPPOTrainer:
         )
         next_step_profile = False
 
+        identity_mode = self.config.get("grouping", {}).get("identity_mode", "legacy_index")
+        ensure_supported_trainer_identity_mode(
+            identity_mode,
+            async_rollout_mode=self.async_rollout_mode,
+            advantage_estimator=self.config.algorithm.adv_estimator,
+            rollout_backend=self.config.actor_rollout_ref.rollout.name,
+        )
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 metrics = {}
@@ -1112,6 +1148,7 @@ class RayPPOTrainer:
                         else curr_step_profile
                     )
                 batch: DataProto = DataProto.from_single_dict(batch_dict)
+                attach_permutation_identity(batch, identity_mode=identity_mode)
 
                 # ========= 使用 original_question_id 或 index//2 作为 uid=========
                 if "extra_info" in batch.non_tensor_batch:
@@ -1168,18 +1205,26 @@ class RayPPOTrainer:
 
                 # pass global_steps to trace
                 gen_batch.meta_info["global_steps"] = self.global_steps
-                gen_batch_output = gen_batch.repeat(
-                    repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True
+                gen_batch_output = repeat_for_rollout(
+                    gen_batch,
+                    repeat_times=self.config.actor_rollout_ref.rollout.n,
+                    identity_mode=identity_mode,
                 )
 
                 is_last_step = self.global_steps >= self.total_training_steps
                 with marked_timer("step", timing_raw):
                     # generate a batch
                     with marked_timer("gen", timing_raw, color="red"):
+                        expected_generation_identity = snapshot_rollout_identity(gen_batch_output, identity_mode)
                         if not self.async_rollout_mode:
                             gen_batch_output = self.actor_rollout_wg.generate_sequences(gen_batch_output)
                         else:
                             gen_batch_output = self.async_rollout_manager.generate_sequences(gen_batch_output)
+                        validate_generation_identity(
+                            expected_generation_identity,
+                            gen_batch_output,
+                            identity_mode=identity_mode,
+                        )
 
                         timing_raw.update(gen_batch_output.meta_info["timing"])
                         gen_batch_output.meta_info.pop("timing", None)
@@ -1213,7 +1258,11 @@ class RayPPOTrainer:
 
                             del rm_scores, gen_baseline_batch, gen_baseline_output
                     # repeat to align with repeated responses in rollout
-                    batch = batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)
+                    batch = repeat_for_rollout(
+                        batch,
+                        repeat_times=self.config.actor_rollout_ref.rollout.n,
+                        identity_mode=identity_mode,
+                    )
                     batch = batch.union(gen_batch_output)
 
                     if "response_mask" not in batch.batch.keys():

@@ -1,0 +1,22 @@
+Task 3 controlled evaluator evidence environments
+Tested commit: 8b9cfff57d4668d1fcaa7f95039dce6782dcd621
+
+=== Windows ===
+OS: Windows 11 10.0.26200
+Python: 3.12.15 (Anaconda, MSC v.1942 64 bit AMD64)
+pytest: 8.4.2
+pandas: 2.3.3
+numpy: 1.26.4
+pyarrow: 22.0.0
+torch: 2.6.0+cpu
+
+=== WSL2 ===
+WSL distro: Ubuntu-24.04
+Distribution: Ubuntu 24.04.5 LTS
+Kernel: Linux 6.18.33.2-microsoft-standard-WSL2 x86_64
+Python: 3.12.3
+pytest: 8.4.2
+pandas: 2.3.3
+numpy: 1.26.4
+pyarrow: 22.0.0
+torch: 2.6.0+cpu

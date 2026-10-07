@@ -1,0 +1,73 @@
+{
+  "setup": {
+    "scalar_rewards": [
+      1.0,
+      1.0,
+      -1.0,
+      -1.0
+    ],
+    "response_lengths": [
+      8,
+      8,
+      8,
+      8
+    ],
+    "group_ids": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "official_real": [
+    1.0,
+    1.0,
+    -1.0,
+    -1.0
+  ],
+  "official_compatible": [
+    1.0,
+    1.0,
+    -1.0,
+    -1.0
+  ],
+  "paper": [
+    0.9999990463256836,
+    0.9999990463256836,
+    -0.9999990463256836,
+    -0.9999990463256836
+  ],
+  "original_grpo": [
+    1.0,
+    1.0,
+    -1.0,
+    -1.0
+  ],
+  "path_proof": {
+    "fallback_message_present": false,
+    "pair_baseline_metrics_present": true,
+    "pair_baseline_metrics": {
+      "pair_baseline/mean_of_pair_means": 0.0,
+      "pair_baseline/mean_of_pair_stds": 1.0,
+      "pair_baseline/std_of_pair_stds": null
+    },
+    "sentinel_test": "tests_permstudy/test_linux_official_advantage.py"
+  },
+  "metrics": {
+    "official_real_vs_compatible": {
+      "l1_difference": 0.0,
+      "linf_difference": 0.0,
+      "sign_disagreement_rate": 0.0
+    },
+    "official_real_vs_paper": {
+      "l1_difference": 9.5367431640625e-07,
+      "linf_difference": 9.5367431640625e-07,
+      "sign_disagreement_rate": 0.0
+    },
+    "official_real_vs_original_grpo": {
+      "l1_difference": 0.0,
+      "linf_difference": 0.0,
+      "sign_disagreement_rate": 0.0
+    }
+  }
+}

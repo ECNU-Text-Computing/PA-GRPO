@@ -1,0 +1,12 @@
+os: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39
+python: 3.12.3
+torch: 2.6.0+cpu
+torch_cuda_available: False
+torch_cuda_version: None
+ray: 2.49.0
+verl_source: /mnt/c/Study/daydayup/projects/EIS-PA-GRPO/PA-GRPO/.worktrees/task2a-linux-fidelity/verl
+vllm: not installed
+gpu: NVIDIA GeForce RTX 5070 Ti Laptop GPU, 616.92, 12227 MiB
+git_commit: f4f801ebed5056ab6cd72ce8d6fabb7f1743759d
+upstream_pa_commit: 0ee9abd903cb4ac4945f1176e943d20436470096
+execution_device: CPU tensors; WSL GPU visibility recorded separately

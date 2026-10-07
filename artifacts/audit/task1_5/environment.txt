@@ -1,0 +1,6 @@
+platform: Windows-11-10.0.26200-SP0
+python: 3.12.15
+torch: 2.6.0+cpu
+device: CPU
+upstream_commit: 0ee9abd903cb4ac4945f1176e943d20436470096
+official_execution: source-equation characterization; direct Ray trainer execution pending Linux smoke

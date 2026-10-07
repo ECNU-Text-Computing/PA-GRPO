@@ -21,8 +21,8 @@ import os
 import re
 import torch
 from datetime import datetime
-from collections import defaultdict
-from torch.utils.tensorboard import SummaryWriter
+
+from permstudy.reward_pairing import build_reward_pairing
 
 # 获取当前文件所在目录，用于构建相对路径
 _CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -167,6 +167,8 @@ def get_tb_writer():
     """Return the lazily-initialized global TensorBoard writer."""
     global _writer
     if _writer is None:
+        from torch.utils.tensorboard import SummaryWriter
+
         os.makedirs(TB_LOG_DIR, exist_ok=True)
         _writer = SummaryWriter(log_dir=TB_LOG_DIR)
     return _writer
@@ -178,6 +180,7 @@ def compute_score(
     ground_truths,
     extra_infos=None,
     consistency_weight: float = 1,
+    identity_mode: str = "legacy_index",
     return_dict: bool = False,
 ):
     """Batch reward function for verl's ``BatchRewardManager`` (Judge / Qwen3).
@@ -193,6 +196,8 @@ def compute_score(
         extra_infos: List[dict], each entry must contain ``index`` and
             ``permutation`` (0 or 1) fields.
         consistency_weight: Coefficient λ for the consistency reward (Eq. 6).
+        identity_mode: ``legacy_index`` preserves official appearance-order
+            pairing; ``explicit`` pairs by ``(pair_id, rollout_slot)``.
         return_dict: If True, return a dict with both the reward tensor and
             per-component breakdowns; otherwise return only the tensor.
 
@@ -216,6 +221,7 @@ def compute_score(
     format_scores = [0.0] * N
     length_scores = [0.0] * N
     consistency_scores = [0.0] * N
+    consistency_unpaired = [0.0] * N
 
     # 添加分量列表用于统计
     corr_list = []
@@ -235,10 +241,13 @@ def compute_score(
         except Exception:
             idx_int = i  
 
-        perm = extra.get("permutation", idx_int % 2)
+        if identity_mode == "explicit":
+            perm = extra.get("permutation_id")
+            pair_id = extra.get("pair_id")
+        else:
+            perm = extra.get("permutation", idx_int % 2)
+            pair_id = idx_int // 2
         permutations[i] = perm
-        
-        pair_id = idx_int // 2
         pair_ids[i] = pair_id
 
         sol = solution_strs[i]
@@ -304,80 +313,69 @@ def compute_score(
         )
 
     # ========= 2. 在 batch 内做成对一致性奖励 =========
-    # group[ pair_id ][ permutation ] = [本 batch 中所有出现位置 i，按出现顺序]
-    group = defaultdict(lambda: {0: [], 1: []})
-    for i, (pid_, perm_) in enumerate(zip(pair_ids, permutations)):
-        if pid_ is None:
-            continue
-        if perm_ not in (0, 1):
-            continue
-        group[pid_][perm_].append(i)
+    pairing = build_reward_pairing(
+        identity_mode=identity_mode,
+        extra_infos=extra_infos,
+        legacy_pair_ids=pair_ids,
+        legacy_permutations=permutations,
+    )
+    for (unpaired_pair_id, unpaired_slot), positions in pairing.unpaired.items():
+        for position in positions:
+            consistency_unpaired[position] = 1.0
+            safe_log(
+                idx_list[position],
+                pid,
+                cuda_device,
+                f"PAIR_UNPAIRED | pair_id={unpaired_pair_id} | rollout_slot={unpaired_slot} | i={position}",
+            )
 
+    for (paired_pair_id, paired_slot), i0, i1 in pairing.pairs:
+        idx0 = idx_list[i0]
+        idx1 = idx_list[i1]
 
-    for pid_, perm_dict in group.items():
-        idxs0 = perm_dict[0]
-        idxs1 = perm_dict[1]
+        a0 = answers[i0]
+        a1 = answers[i1]
 
-        m = min(len(idxs0), len(idxs1))
-        if m == 0:
-            continue
-
-        for t in range(m):
-            i0 = idxs0[t]
-            i1 = idxs1[t]
-
-            idx0 = idx_list[i0]
-            idx1 = idx_list[i1]
-
-            a0 = answers[i0]
-            a1 = answers[i1]
-
-            if a0 not in CONSIST_MAP or a1 is None:
-                safe_log(
-                    f"{idx0},{idx1}",
-                    pid,
-                    cuda_device,
-                    (
-                        f"PAIR_SKIP | pair_id={pid_} | t={t} | "
-                        f"i0={i0},idx0={idx0},ans0={a0},conf0={confidences[i0]:.2f} | "
-                        f"i1={i1},idx1={idx1},ans1={a1},conf1={confidences[i1]:.2f} | "
-                        "reason=invalid_answer_for_mapping"
-                    ),
-                )
-                continue
-
-
-            mapped = CONSIST_MAP.get(a0)
-            is_consistent = (mapped == a1)
-
-            if is_consistent:
-                pair_bonus = consistency_weight
-                scores[i0] += pair_bonus 
-                scores[i1] += pair_bonus 
-            else:
-                pair_bonus = -consistency_weight
-                scores[i0] += pair_bonus 
-                scores[i1] += pair_bonus 
-            consistency_scores[i0] += pair_bonus
-            consistency_scores[i1] += pair_bonus
-
-            # ==== log一致性奖励 ====
+        if a0 not in CONSIST_MAP or a1 is None:
             safe_log(
                 f"{idx0},{idx1}",
                 pid,
                 cuda_device,
                 (
-                    "PAIR_CHECK | "
-                    f"pair_id={pid_} | t={t} | "
+                    f"PAIR_SKIP | pair_id={paired_pair_id} | rollout_slot={paired_slot} | "
                     f"i0={i0},idx0={idx0},ans0={a0},conf0={confidences[i0]:.2f} | "
                     f"i1={i1},idx1={idx1},ans1={a1},conf1={confidences[i1]:.2f} | "
-                    f"mapped(ans0)={mapped} | "
-                    f"is_consistent={is_consistent} | "
-                    f"pair_bonus={pair_bonus:.3f} | "
-                    f"final_score0={scores[i0]:.3f} | "
-                    f"final_score1={scores[i1]:.3f}"
+                    "reason=invalid_answer_for_mapping"
                 ),
             )
+            continue
+
+        mapped = CONSIST_MAP.get(a0)
+        is_consistent = mapped == a1
+
+        pair_bonus = consistency_weight if is_consistent else -consistency_weight
+        scores[i0] += pair_bonus
+        scores[i1] += pair_bonus
+        consistency_scores[i0] += pair_bonus
+        consistency_scores[i1] += pair_bonus
+
+        # ==== log一致性奖励 ====
+        safe_log(
+            f"{idx0},{idx1}",
+            pid,
+            cuda_device,
+            (
+                "PAIR_CHECK | "
+                f"pair_id={paired_pair_id} | rollout_slot={paired_slot} | "
+                f"i0={i0},idx0={idx0},ans0={a0},conf0={confidences[i0]:.2f} | "
+                f"i1={i1},idx1={idx1},ans1={a1},conf1={confidences[i1]:.2f} | "
+                f"mapped(ans0)={mapped} | "
+                f"is_consistent={is_consistent} | "
+                f"pair_bonus={pair_bonus:.3f} | "
+                f"final_score0={scores[i0]:.3f} | "
+                f"final_score1={scores[i1]:.3f}"
+            ),
+        )
 
     # ========= 3. 记录到 TensorBoard =========
     global _global_step
@@ -397,6 +395,8 @@ def compute_score(
     writer.add_scalar("reward/format", mean_format, _global_step)
     writer.add_scalar("reward/length", mean_length, _global_step)
     writer.add_scalar("reward/consistency", mean_consistency, _global_step)
+    if identity_mode == "explicit":
+        writer.add_scalar("reward/consistency_unpaired_rate", safe_mean(consistency_unpaired), _global_step)
     writer.add_scalar("reward/confidence", mean_confidence, _global_step)
     writer.add_scalar("reward/total", mean_total, _global_step)
 
@@ -414,6 +414,8 @@ def compute_score(
         "extraction_method": extraction_methods,
         "total": [float(x) for x in scores],
     }
+    if identity_mode == "explicit":
+        reward_extra_info["consistency_unpaired"] = [float(x) for x in consistency_unpaired]
     return {
         "reward_tensor": rewards_tensor,
         "reward_extra_info": reward_extra_info,

@@ -1,0 +1,80 @@
+{
+  "setup": {
+    "scalar_rewards": [
+      1.0,
+      1.0,
+      -1.0,
+      -1.0
+    ],
+    "group_ids": [
+      "pair-1",
+      "pair-1",
+      "pair-1",
+      "pair-1"
+    ],
+    "response_lengths": [
+      2,
+      8,
+      4,
+      10
+    ]
+  },
+  "paper": {
+    "advantage": [
+      0.9999990463256836,
+      0.9999990463256836,
+      -0.9999990463256836,
+      -0.9999990463256836
+    ],
+    "group_mean": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "group_std": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "gate_mask": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "official_compatible": {
+    "advantage": [
+      0.4472135901451111,
+      1.3416407108306885,
+      -0.4472135901451111,
+      -1.3416407108306885
+    ],
+    "group_mean": [
+      -0.09999999403953552,
+      -0.09999999403953552,
+      -0.09999999403953552,
+      -0.09999999403953552
+    ],
+    "group_std": [
+      0.670820415019989,
+      0.670820415019989,
+      0.670820415019989,
+      0.670820415019989
+    ],
+    "gate_mask": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "metrics": {
+    "adv_l1_diff_official_vs_paper": 0.4472135603427887,
+    "adv_linf_diff_official_vs_paper": 0.5527854561805725,
+    "adv_sign_disagreement_rate": 0.0
+  },
+  "scope_note": "official_compatible reproduces the equations in the pinned ray_trainer.py path; direct import/execution of the Ray trainer remains a Linux-stack check"
+}

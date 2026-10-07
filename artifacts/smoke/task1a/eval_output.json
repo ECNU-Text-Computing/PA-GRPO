@@ -1,0 +1,76 @@
+{
+  "dataset": "judge_smoke_direct.parquet",
+  "mode": "direct",
+  "num_options": 4,
+  "total_samples": 2,
+  "evaluated_samples": 2,
+  "correct": 1,
+  "total_with_answer": 2,
+  "accuracy": 0.5,
+  "results": [
+    {
+      "row_index": 0,
+      "data_source": "synthetic_pairwise_smoke",
+      "ability": "arithmetic",
+      "extra_info": {
+        "pair_id": "smoke_pair",
+        "permutation": 0
+      },
+      "original_prompt": [
+        {
+          "content": "Reply with only A or B.",
+          "role": "system"
+        },
+        {
+          "content": "Which response is more correct?\nA: 2 + 2 = 4\nB: 2 + 2 = 5\nAnswer with A or B only.",
+          "role": "user"
+        }
+      ],
+      "user_question": "Which response is more correct?\nA: 2 + 2 = 4\nB: 2 + 2 = 5\nAnswer with A or B only.",
+      "system_prompt": "Reply with only A or B.",
+      "golden_answer": "A",
+      "model_response": "A: 2",
+      "extracted_answer": "A",
+      "thinking_content": "",
+      "is_correct": true,
+      "answer_probability": {
+        "A": 0.45706355571746826,
+        "B": 0.1019846647977829,
+        "C": 0.0016484286170452833,
+        "D": 0.0002527947071939707
+      }
+    },
+    {
+      "row_index": 1,
+      "data_source": "synthetic_pairwise_smoke",
+      "ability": "arithmetic",
+      "extra_info": {
+        "pair_id": "smoke_pair",
+        "permutation": 1
+      },
+      "original_prompt": [
+        {
+          "content": "Reply with only A or B.",
+          "role": "system"
+        },
+        {
+          "content": "Which response is more correct?\nA: 2 + 2 = 5\nB: 2 + 2 = 4\nAnswer with A or B only.",
+          "role": "user"
+        }
+      ],
+      "user_question": "Which response is more correct?\nA: 2 + 2 = 5\nB: 2 + 2 = 4\nAnswer with A or B only.",
+      "system_prompt": "Reply with only A or B.",
+      "golden_answer": "B",
+      "model_response": "A: 2",
+      "extracted_answer": "A",
+      "thinking_content": "",
+      "is_correct": false,
+      "answer_probability": {
+        "A": 0.42747262120246887,
+        "B": 0.10808200389146805,
+        "C": 0.0017469829181209207,
+        "D": 0.00026790850097313523
+      }
+    }
+  ]
+}

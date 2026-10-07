@@ -1,0 +1,73 @@
+{
+  "setup": {
+    "scalar_rewards": [
+      1.0,
+      1.0,
+      -1.0,
+      -1.0
+    ],
+    "response_lengths": [
+      2,
+      8,
+      4,
+      10
+    ],
+    "group_ids": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "official_real": [
+    0.4472135901451111,
+    1.341640591621399,
+    -0.4472135901451111,
+    -1.341640591621399
+  ],
+  "official_compatible": [
+    0.4472135901451111,
+    1.3416407108306885,
+    -0.4472135901451111,
+    -1.3416407108306885
+  ],
+  "paper": [
+    0.9999990463256836,
+    0.9999990463256836,
+    -0.9999990463256836,
+    -0.9999990463256836
+  ],
+  "original_grpo": [
+    1.0,
+    1.0,
+    -1.0,
+    -1.0
+  ],
+  "path_proof": {
+    "fallback_message_present": false,
+    "pair_baseline_metrics_present": true,
+    "pair_baseline_metrics": {
+      "pair_baseline/mean_of_pair_means": -0.09999999403953552,
+      "pair_baseline/mean_of_pair_stds": 0.670820415019989,
+      "pair_baseline/std_of_pair_stds": null
+    },
+    "sentinel_test": "tests_permstudy/test_linux_official_advantage.py"
+  },
+  "metrics": {
+    "official_real_vs_compatible": {
+      "l1_difference": 5.960464477539063e-08,
+      "linf_difference": 1.1920928955078125e-07,
+      "sign_disagreement_rate": 0.0
+    },
+    "official_real_vs_paper": {
+      "l1_difference": 0.4472135007381439,
+      "linf_difference": 0.5527854561805725,
+      "sign_disagreement_rate": 0.0
+    },
+    "official_real_vs_original_grpo": {
+      "l1_difference": 0.4472135007381439,
+      "linf_difference": 0.5527864098548889,
+      "sign_disagreement_rate": 0.0
+    }
+  }
+}
